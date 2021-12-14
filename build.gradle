@@ -97,6 +97,7 @@ configure(moduleProjects) {
 				entry 'mockito-inline'
 				entry 'mockito-junit-jupiter'
 			}
+			dependency "org.springframework.hateoas:spring-hateoas:1.4.0"
 		}
 		generatedPomCustomization {
 			enabled = false

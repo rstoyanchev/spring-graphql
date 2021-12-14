@@ -31,6 +31,17 @@ dependencies {
 
 	testRuntimeOnly 'org.apache.logging.log4j:log4j-core'
 	testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+
+	// Integration tests
+
+	testImplementation 'org.springframework:spring-webmvc'
+	testImplementation 'javax.servlet:javax.servlet-api'
+	testImplementation 'org.springframework.hateoas:spring-hateoas'
+	testImplementation 'org.springframework.data:spring-data-commons'
+	testImplementation 'org.springframework.data:spring-data-keyvalue'
+	testImplementation 'org.springframework.data:spring-data-jpa'
+	testImplementation 'com.querydsl:querydsl-core'
+	testImplementation 'com.querydsl:querydsl-collections'
 }
 
 test {
