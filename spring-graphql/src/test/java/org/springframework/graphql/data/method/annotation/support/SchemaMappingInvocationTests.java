@@ -242,6 +242,7 @@ public class SchemaMappingInvocationTests {
 
 		@QueryMapping
 		public List<Book> booksByProjectedArguments(BookProjection projection) {
+			System.out.println("Author defined: " + projection.isAuthorDefined());
 			return BookSource.findBooksByAuthor(projection.getAuthor());
 		}
 
@@ -277,6 +278,8 @@ public class SchemaMappingInvocationTests {
 	interface BookProjection {
 
 		String getAuthor();
+
+		boolean isAuthorDefined();
 
 	}
 

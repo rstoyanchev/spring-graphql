@@ -16,7 +16,13 @@
 package org.springframework.graphql.data.method.annotation.support;
 
 
+import java.lang.reflect.Method;
+import java.util.Map;
+
+import com.querydsl.core.util.StringUtils;
 import graphql.schema.DataFetchingEnvironment;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanClassLoaderAware;
@@ -24,10 +30,15 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.data.projection.Accessor;
+import org.springframework.data.projection.MethodInterceptorFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.web.ProjectedPayload;
 import org.springframework.graphql.data.method.HandlerMethodArgumentResolver;
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * Resolver to obtain an {@link ProjectedPayload @ProjectedPayload},
@@ -62,6 +73,11 @@ public class ProjectedPayloadMethodArgumentResolver implements HandlerMethodArgu
 		BeanFactoryAware, BeanClassLoaderAware {
 
 	private final SpelAwareProxyProjectionFactory projectionFactory = new SpelAwareProxyProjectionFactory();
+
+
+	public ProjectedPayloadMethodArgumentResolver() {
+		projectionFactory.registerMethodInvokerFactory(new ExtendedMapAccessingMethodInterceptorFactory());
+	}
 
 
 	@Override
@@ -99,6 +115,66 @@ public class ProjectedPayloadMethodArgumentResolver implements HandlerMethodArgu
 
 	protected Object project(Class<?> projectionType, Object projectionSource){
 		return this.projectionFactory.createProjection(projectionType, projectionSource);
+	}
+
+
+
+	@SuppressWarnings("unchecked")
+	private static class ExtendedMapAccessingMethodInterceptorFactory implements MethodInterceptorFactory {
+
+		@Override
+		public MethodInterceptor createMethodInterceptor(Object source, Class<?> targetType) {
+			return new ExtendedMapAccessingMethodInterceptor((Map<String, Object>) source);
+		}
+
+		@Override
+		public boolean supports(Object source, Class<?> targetType) {
+			return source instanceof Map;
+		}
+
+	}
+
+
+	private static class ExtendedMapAccessingMethodInterceptor implements MethodInterceptor {
+
+		private final Map<String, Object> map;
+
+		ExtendedMapAccessingMethodInterceptor(Map<String, Object> map) {
+			Assert.notNull(map, "`map` is required");
+			this.map = map;
+		}
+
+		@Nullable
+		@Override
+		public Object invoke(@SuppressWarnings("null") MethodInvocation invocation) throws Throwable {
+
+			Method method = invocation.getMethod();
+
+			if (ReflectionUtils.isObjectMethod(method)) {
+				return invocation.proceed();
+			}
+
+			String methodName = method.getName();
+			if (method.getReturnType() == boolean.class &&
+					methodName.startsWith("is") && methodName.endsWith("Defined")) {
+
+				String key = methodName.substring(2, methodName.length() - 7);
+				key = StringUtils.uncapitalize(key);
+				return map.containsKey(key);
+			}
+
+			Accessor accessor = new Accessor(method);
+
+			if (accessor.isGetter()) {
+				return map.get(accessor.getPropertyName());
+			}
+			else if (accessor.isSetter()) {
+				map.put(accessor.getPropertyName(), invocation.getArguments()[0]);
+				return null;
+			}
+
+			throw new IllegalStateException("Should never get here!");
+		}
 	}
 
 }
