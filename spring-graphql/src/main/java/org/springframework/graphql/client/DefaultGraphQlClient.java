@@ -33,12 +33,11 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 final class DefaultGraphQlClient implements GraphQlClient {
 
-	private final WebClient webClient;
+	private final GraphQlTransport transport;
 
 
-	DefaultGraphQlClient(WebClient webClient) {
-		Assert.notNull(webClient, "WebClient is required");
-		this.webClient = webClient;
+	public DefaultGraphQlClient(GraphQlTransport transport) {
+		this.transport = transport;
 	}
 
 
@@ -48,7 +47,7 @@ final class DefaultGraphQlClient implements GraphQlClient {
 	}
 
 
-	private static final class DefaultRequestSpec implements RequestSpec<DefaultRequestSpec> {
+	private static final class DefaultRequestSpec implements RequestSpec {
 
 		private final WebClient webClient;
 
@@ -59,11 +58,13 @@ final class DefaultGraphQlClient implements GraphQlClient {
 
 		private final Map<String, Object> variables = new LinkedHashMap<>();
 
+
 		DefaultRequestSpec(WebClient webClient, String query) {
 			Assert.notNull(query, "`query` is required");
 			this.webClient = webClient;
 			this.query = query;
 		}
+
 
 		@Override
 		public DefaultRequestSpec operationName(String name) {
@@ -79,17 +80,6 @@ final class DefaultGraphQlClient implements GraphQlClient {
 
 		@Override
 		public Mono<ResponseSpec> execute() {
-			EntityExchangeResult<byte[]> result = this.webClient.post()
-					.contentType(MediaType.APPLICATION_JSON)
-					.headers(headers -> headers.putAll(webInput.getHeaders()))
-					.bodyValue(webInput.toMap())
-					.exchange()
-					.expectStatus()
-					.isOk()
-					.expectHeader()
-					.contentType(MediaType.APPLICATION_JSON)
-					.expectBody()
-					.returnResult();
 			return null;
 		}
 

@@ -40,6 +40,26 @@ public interface GraphQlClient {
 	 */
 	RequestSpec query(String query);
 
+	/**
+	 * Refer to a query by name where the given name is to look for a file with
+	 * the same name and extension {@code ".graphql"} or {@code ".gql"} under
+	 * classpath location {@code "graphql/"}.
+	 * @return spec for response assertions
+	 * @throws IllegalArgumentException if the queryName cannot be resolved
+	 * @throws AssertionError if the response status is not 200 (OK)
+	 */
+	RequestSpec queryName(String queryName);
+
+
+	/**
+	 *
+	 * @param transport
+	 * @return
+	 */
+	static GraphQlClient create(GraphQlTransport transport) {
+		return new DefaultGraphQlClient(transport);
+	}
+
 
 	/**
 	 * Declare options to perform a GraphQL request.
@@ -52,17 +72,18 @@ public interface GraphQlClient {
 
 	}
 
+
 	/**
 	 * Declare options to gather input for a GraphQL request and execute it.
 	 */
-	interface RequestSpec<T extends RequestSpec<T>> extends ExecuteSpec {
+	interface RequestSpec extends ExecuteSpec {
 
 		/**
 		 * Set the operation name.
 		 * @param name the operation name
 		 * @return this request spec
 		 */
-		T operationName(@Nullable String name);
+		RequestSpec operationName(@Nullable String name);
 
 		/**
 		 * Add a variable.
@@ -70,7 +91,7 @@ public interface GraphQlClient {
 		 * @param value the variable value
 		 * @return this request spec
 		 */
-		T variable(String name, Object value);
+		RequestSpec variable(String name, Object value);
 
 	}
 
