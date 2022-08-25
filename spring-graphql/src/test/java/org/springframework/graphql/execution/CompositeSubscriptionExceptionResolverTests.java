@@ -22,12 +22,12 @@ import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
+import io.micrometer.context.ContextRegistry;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
-import reactor.util.context.ContextView;
 
 import org.springframework.graphql.GraphQlSetup;
 import org.springframework.graphql.ResponseHelper;
@@ -64,6 +64,8 @@ public class CompositeSubscriptionExceptionResolverTests {
 				.toGraphQl();
 
 		ExecutionInput input = ExecutionInput.newExecutionInput(query).build();
+		DefaultExecutionGraphQlService.captureAndSetContextSnapshot(Context.empty(), input);
+
 		Flux<ResponseHelper> flux = Mono.fromFuture(graphQL.executeAsync(input))
 				.map(ResponseHelper::forSubscription)
 				.block(TIMEOUT);
@@ -85,14 +87,14 @@ public class CompositeSubscriptionExceptionResolverTests {
 		String query = "subscription { greetings }";
 		String schema = "type Subscription { greetings: String! } type Query { greeting: String! }";
 
-		ThreadLocal<String> nameThreadLocal = new ThreadLocal<>();
-		nameThreadLocal.set("007");
-		TestThreadLocalAccessor<String> accessor = new TestThreadLocalAccessor<>(nameThreadLocal);
+		ThreadLocal<String> threadLocal = new ThreadLocal<>();
+		threadLocal.set("007");
+		ContextRegistry.getInstance().registerThreadLocalAccessor(new TestThreadLocalAccessor<>(threadLocal));
 
 		try {
 			SubscriptionExceptionResolverAdapter resolver = SubscriptionExceptionResolver.forSingleError(exception ->
 					GraphqlErrorBuilder.newError()
-							.message("Error: " + exception.getMessage() + ", name=" + nameThreadLocal.get())
+							.message("Error: " + exception.getMessage() + ", name=" + threadLocal.get())
 							.errorType(ErrorType.BAD_REQUEST)
 							.build());
 			resolver.setThreadLocalContextAware(true);
@@ -106,9 +108,8 @@ public class CompositeSubscriptionExceptionResolverTests {
 					.subscriptionExceptionResolvers(resolver)
 					.toGraphQl();
 
-			ContextView view = ReactorContextManager.extractThreadLocalValues(accessor, Context.empty());
 			ExecutionInput input = ExecutionInput.newExecutionInput(query).build();
-			ReactorContextManager.setReactorContext(view, input.getGraphQLContext());
+			DefaultExecutionGraphQlService.captureAndSetContextSnapshot(Context.empty(), input);
 
 			Flux<ResponseHelper> flux = Mono.delay(Duration.ofMillis(10))
 					.flatMap((aLong) -> Mono.fromFuture(graphQL.executeAsync(input)).map(ResponseHelper::forSubscription))
@@ -126,7 +127,7 @@ public class CompositeSubscriptionExceptionResolverTests {
 					.verify(TIMEOUT);
 		}
 		finally {
-			nameThreadLocal.remove();
+			threadLocal.remove();
 		}
 	}
 

@@ -37,8 +37,10 @@ import org.springframework.beans.factory.ObjectProvider;
  *
  * @author Rossen Stoyanchev
  * @since 1.0.0
+ * @deprecated as of 1.0.0 ...
  * @see org.springframework.graphql.server.WebGraphQlHandler.Builder#threadLocalAccessor(ThreadLocalAccessor...)
  */
+@Deprecated
 public interface ThreadLocalAccessor {
 
 	/**

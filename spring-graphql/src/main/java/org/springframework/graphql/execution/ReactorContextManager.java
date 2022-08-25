@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * @author Rossen Stoyanchev
  * @since 1.0.0
  */
+@SuppressWarnings("deprecation")
 public abstract class ReactorContextManager {
 
 	private static final String CONTEXT_VIEW_KEY = ReactorContextManager.class.getName() + ".CONTEXT_VIEW";

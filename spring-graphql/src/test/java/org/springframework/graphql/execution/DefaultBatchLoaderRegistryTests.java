@@ -109,10 +109,10 @@ public class DefaultBatchLoaderRegistryTests {
 		assertThat(map.get(name).getStatistics()).isSameAs(collector.getStatistics());
 	}
 
-	private GraphQLContext initGraphQLContext(ContextView context) {
-		ExecutionInput executionInput = ExecutionInput.newExecutionInput().query("").build();
-		ReactorContextManager.setReactorContext(context, executionInput.getGraphQLContext());
-		return executionInput.getGraphQLContext();
+	private GraphQLContext initGraphQLContext(ContextView contextView) {
+		ExecutionInput input = ExecutionInput.newExecutionInput().query("").build();
+		DefaultExecutionGraphQlService.captureAndSetContextSnapshot(contextView, input);
+		return input.getGraphQLContext();
 	}
 
 }

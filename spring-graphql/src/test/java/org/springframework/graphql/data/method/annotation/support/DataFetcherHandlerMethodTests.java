@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 import graphql.GraphQLContext;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.DataFetchingEnvironmentImpl;
+import io.micrometer.context.ContextSnapshot;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -52,6 +53,7 @@ public class DataFetcherHandlerMethodTests {
 				resolvers, null, new SimpleAsyncTaskExecutor(), false);
 
 		GraphQLContext graphQLContext = new GraphQLContext.Builder().build();
+		graphQLContext.put(ContextSnapshot.class.getName(), ContextSnapshot.capture());
 
 		DataFetchingEnvironment environment = DataFetchingEnvironmentImpl.newDataFetchingEnvironment()
 				.graphQLContext(graphQLContext)

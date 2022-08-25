@@ -24,13 +24,16 @@ import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.GraphQLContext;
 import graphql.execution.ExecutionIdProvider;
+import io.micrometer.context.ContextSnapshot;
 import org.dataloader.DataLoaderRegistry;
 import reactor.core.publisher.Mono;
+import reactor.util.context.ContextView;
 
 import org.springframework.graphql.ExecutionGraphQlRequest;
 import org.springframework.graphql.ExecutionGraphQlResponse;
 import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
+import org.springframework.util.Assert;
 
 /**
  * {@link ExecutionGraphQlService} that uses a {@link GraphQlSource} to obtain a
@@ -40,6 +43,8 @@ import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
  * @since 1.0.0
  */
 public class DefaultExecutionGraphQlService implements ExecutionGraphQlService {
+
+	static final String CONTEXT_SNAPSHOT_KEY = ContextSnapshot.class.getName();
 
 	private static final BiFunction<ExecutionInput, ExecutionInput.Builder, ExecutionInput> RESET_EXECUTION_ID_CONFIGURER =
 			(executionInput, builder) -> builder.executionId(null).build();
@@ -76,11 +81,22 @@ public class DefaultExecutionGraphQlService implements ExecutionGraphQlService {
 				request.configureExecutionInput(RESET_EXECUTION_ID_CONFIGURER);
 			}
 			ExecutionInput executionInput = request.toExecutionInput();
-			ReactorContextManager.setReactorContext(contextView, executionInput.getGraphQLContext());
+			captureAndSetContextSnapshot(contextView, executionInput);
 			ExecutionInput updatedExecutionInput = registerDataLoaders(executionInput);
 			return Mono.fromFuture(this.graphQlSource.graphQl().executeAsync(updatedExecutionInput))
 					.map(result -> new DefaultExecutionGraphQlResponse(updatedExecutionInput, result));
 		});
+	}
+
+	static void captureAndSetContextSnapshot(ContextView contextView, ExecutionInput executionInput) {
+		ContextSnapshot snapshot = ContextSnapshot.capture(contextView);
+		executionInput.getGraphQLContext().put(CONTEXT_SNAPSHOT_KEY, snapshot);
+	}
+
+	static ContextSnapshot getContextSnapshot(GraphQLContext graphQLContext) {
+		ContextSnapshot snapshot = graphQLContext.get(DefaultExecutionGraphQlService.CONTEXT_SNAPSHOT_KEY);
+		Assert.notNull(snapshot, "No ContextSnapshot in GraphQLContext");
+		return snapshot;
 	}
 
 	private ExecutionInput registerDataLoaders(ExecutionInput executionInput) {
