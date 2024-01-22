@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -58,16 +59,16 @@ final class HttpMessageConverterDelegate {
 
 	static Encoder<?> getJsonEncoder(List<HttpMessageConverter<?>> converters) {
 		HttpMessageConverter<Object> converter = findJsonConverter(converters);
-		return new HttpMessageConverterEncoder(converter);
+		return asEncoder(converter);
 	}
 
 	static Decoder<?> getJsonDecoder(List<HttpMessageConverter<?>> converters) {
 		HttpMessageConverter<Object> converter = findJsonConverter(converters);
-		return new HttpMessageConverterDecoder(converter);
+		return asDecoder(converter);
 	}
 
 	@SuppressWarnings("unchecked")
-	private static HttpMessageConverter<Object> findJsonConverter(List<HttpMessageConverter<?>> converters) {
+	static HttpMessageConverter<Object> findJsonConverter(List<HttpMessageConverter<?>> converters) {
 		return (HttpMessageConverter<Object>) converters.stream()
 				.filter(converter -> converter.canRead(Map.class, MediaType.APPLICATION_JSON))
 				.findFirst()
@@ -80,6 +81,14 @@ final class HttpMessageConverterDelegate {
 			return mediaType;
 		}
 		return (mimeType != null ? new MediaType(mimeType) : null);
+	}
+
+	static HttpMessageConverterEncoder asEncoder(HttpMessageConverter<Object> converter) {
+		return new HttpMessageConverterEncoder(converter);
+	}
+
+	static HttpMessageConverterDecoder asDecoder(HttpMessageConverter<Object> converter) {
+		return new HttpMessageConverterDecoder(converter);
 	}
 
 
